@@ -30,4 +30,21 @@ if [ "$current_version" = "$latest_version" ]; then
     echo "skip=true" >> $GITHUB_OUTPUT
     exit 0
 fi
+
+# Check if the latest version is in the blacklist. With default empty.
+BLACKLISTED_VERSIONS=${3:-""}
+if [ -z "$BLACKLISTED_VERSIONS" ]; then
+    echo "No blacklisted versions provided."
+    echo "skip=false" >> $GITHUB_OUTPUT
+    exit 0
+fi
+for version in ${BLACKLISTED_VERSIONS//,/ }
+do
+    if [ "$latest_version" = "$version" ]; then
+        echo "Latest version $latest_version is blacklisted. Skipping..."
+        echo "skip=true" >> $GITHUB_OUTPUT
+        exit 0
+    fi
+done
+
 echo "skip=false" >> $GITHUB_OUTPUT
