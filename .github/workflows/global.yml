@@ -42,7 +42,7 @@ jobs:
         with:
           package_name: ${{ env.PACKAGE_NAME }}
           force_update: ${{ env.FORCE_UPDATE }}
-          blacklist_versions: ${{ env.GLOBAL_BLACKLISTED_VERSIONS }}
+          blacklist_versions: ${{ vars.GLOBAL_BLACKLISTED_VERSIONS || '' }}
       - name: Install dependencies
         if: steps.inspect-apk.outputs.skip == 'false'
         shell: bash
