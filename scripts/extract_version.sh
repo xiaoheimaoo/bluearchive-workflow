@@ -3,12 +3,6 @@
 package_name=$1
 force_update=$2
 BLACKLISTED_VERSIONS=${3:-""}
-apk_url=${4:-""}
-
-if [ -n "$apk_url" ]; then
-    echo "Using APK URL: $apk_url"
-    echo "[{\"url\": \"$apk_url\"}]" > output.json
-fi
 
 if [ ! -f output.json ]; then
     echo "APK version not found. Skipping..."

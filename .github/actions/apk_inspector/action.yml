@@ -17,6 +17,10 @@ inputs:
     description: Direct URL to the APK to download (overrides package name)
     required: false
     default: ''
+  override_version:
+    description: Override the detected version
+    required: false
+    default: ''
 
 outputs:
   skip:
@@ -36,7 +40,7 @@ runs:
 
     - name: Get APK information
       shell: bash
-      run: ./scripts/get_info.sh ${{ inputs.package_name }}
+      run: ./scripts/get_info.sh ${{ inputs.package_name }} ${{ inputs.override_version }} ${{ inputs.apk_url }}
 
     - name: Check the APK version
       id: get-version
