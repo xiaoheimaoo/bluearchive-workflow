@@ -2,6 +2,13 @@
 
 package_name=$1
 force_update=$2
+BLACKLISTED_VERSIONS=${3:-""}
+apk_url=${4:-""}
+
+if [ -n "$apk_url" ]; then
+    echo "Using APK URL: $apk_url"
+    echo "[{\"url\": \"$apk_url\"}]" > output.json
+fi
 
 if [ ! -f output.json ]; then
     echo "APK version not found. Skipping..."
@@ -31,8 +38,6 @@ if [ "$current_version" = "$latest_version" ]; then
     exit 0
 fi
 
-# Check if the latest version is in the blacklist. With default empty.
-BLACKLISTED_VERSIONS=${3:-""}
 if [ -z "$BLACKLISTED_VERSIONS" ]; then
     echo "No blacklisted versions provided."
     echo "skip=false" >> $GITHUB_OUTPUT

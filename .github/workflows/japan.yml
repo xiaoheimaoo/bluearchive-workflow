@@ -15,9 +15,15 @@ on:
         required: false
         description: "The package name of the APK"
         default: "com.YostarJP.BlueArchive"
+      apk_url:
+        type: string
+        required: false
+        description: "Direct URL to the APK to download (overrides package name)"
+        default: ""
 
 env:
   PACKAGE_NAME: ${{ inputs.package_name || 'com.YostarJP.BlueArchive' }}
+  APK_URL: ${{ inputs.apk_url || '' }}
   FORCE_UPDATE: ${{ inputs.force_update || 'false' }}
 
 jobs:
@@ -44,6 +50,7 @@ jobs:
           package_name: ${{ env.PACKAGE_NAME }}
           force_update: ${{ env.FORCE_UPDATE }}
           blacklist_versions: ${{ vars.JAPAN_BLACKLISTED_VERSIONS || '' }}
+          apk_url: ${{ env.APK_URL || '' }}
       - name: Install dependencies
         if: steps.inspect-apk.outputs.skip == 'false'
         shell: bash

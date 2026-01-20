@@ -13,6 +13,10 @@ inputs:
     description: A comma-separated list of blacklisted versions
     required: false
     default: ''
+  apk_url:
+    description: Direct URL to the APK to download (overrides package name)
+    required: false
+    default: ''
 
 outputs:
   skip:
@@ -42,4 +46,4 @@ runs:
     - name: Download APK
       if: steps.get-version.outputs.skip == 'false'
       shell: bash
-      run: ./scripts/download.sh ${{ inputs.package_name }}
+      run: ./scripts/download.sh ${{ inputs.package_name }} ${{ inputs.apk_url }}
