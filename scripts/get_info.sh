@@ -4,7 +4,7 @@ package_name=$1
 override_version=$2
 apk_url=$3
 
-if [ -n "$override_version" && -n "$apk_url" ]; then
+if [[ -n "$override_version" && -n "$apk_url" ]]; then
     echo "Using override version: $override_version"
     echo "Using APK URL: $apk_url"
     echo "[{\"version\": \"$override_version\", \"url\": \"$apk_url\"}]" > output.json
