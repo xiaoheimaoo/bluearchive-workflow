@@ -49,6 +49,7 @@ jobs:
             requirements.txt
           sparse-checkout-cone-mode: false
           fetch-depth: 0
+
       - name: Inspect APK
         id: inspect-apk
         uses: ./.github/actions/apk_inspector
@@ -58,47 +59,89 @@ jobs:
           blacklist_versions: ${{ vars.JAPAN_BLACKLISTED_VERSIONS || '' }}
           apk_url: ${{ env.APK_URL || '' }}
           override_version: ${{ env.OVERRIDE_VERSION || '' }}
+
       - name: Install dependencies
         if: steps.inspect-apk.outputs.skip == 'false'
         shell: bash
         run: |
-          sudo apt-get install ripgrep
-          curl -O https://dl.min.io/client/mc/release/linux-amd64/mc
-          chmod +x mc
+          sudo apt-get update
+          sudo apt-get install -y ripgrep zip unzip
+
       - name: Prepare for decompilation
         if: steps.inspect-apk.outputs.skip == 'false'
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p ./tmp/Data
-          unzip output.xapk
+          unzip -q output.xapk
           unzip -p config.arm64_v8a.apk lib/arm64-v8a/libil2cpp.so > libil2cpp.so
           unzip -p ${{ env.PACKAGE_NAME }}.apk assets/bin/Data/Managed/Metadata/global-metadata.dat > global-metadata.dat
           unzip -j UnityDataAssetPack.apk "assets/bin/Data/*" -d ./tmp/Data/
+
       - name: Decompile APK
         id: decompile-apk
         if: steps.inspect-apk.outputs.skip == 'false'
-        run: ./scripts/decompile.sh
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./scripts/decompile.sh
+
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
           python-version: "3.13"
+
       - name: Extract bundle version
         id: extract-bundle-version
         if: steps.inspect-apk.outputs.skip == 'false'
+        shell: bash
         run: |
+          set -euo pipefail
           pip install -r requirements.txt
           python ./scripts/dump_config.py -i ./tmp/Data/ -o ./tmp/GameMainConfig.bytes
           python ./scripts/decrypt_config.py -i ./tmp/GameMainConfig.bytes -o ./GameMainConfig.json
-      - name: Upload to S3
+
+      - name: Save outputs to raw/
         if: steps.inspect-apk.outputs.skip == 'false'
+        shell: bash
         run: |
-          echo -n "${{ steps.inspect-apk.outputs.version }}" > version.txt
-          echo -n "${{ steps.decompile-apk.outputs.offset }}" > offset.txt
-          zip -r decompiled.zip ./DiffableCs/
-          ./mc alias set target ${{ vars.S3_ENDPOINT }} ${{ secrets.S3_ACCESS_KEY }} ${{ secrets.S3_SECRET_KEY }}
-          ./mc cp ./version.txt target/bluearchive/${{ env.PACKAGE_NAME }}/version.txt
-          ./mc cp ./output.xapk target/bluearchive/${{ env.PACKAGE_NAME }}/apks/${{ steps.inspect-apk.outputs.version }}/output.xapk
-          ./mc cp ./libil2cpp.so target/bluearchive/${{ env.PACKAGE_NAME }}/libraries/${{ steps.inspect-apk.outputs.version }}/libil2cpp.so
-          ./mc cp ./global-metadata.dat target/bluearchive/${{ env.PACKAGE_NAME }}/libraries/${{ steps.inspect-apk.outputs.version }}/global-metadata.dat
-          ./mc cp ./offset.txt target/bluearchive/${{ env.PACKAGE_NAME }}/decompiled/${{ steps.inspect-apk.outputs.version }}/offset.txt
-          ./mc cp ./decompiled.zip target/bluearchive/${{ env.PACKAGE_NAME }}/decompiled/${{ steps.inspect-apk.outputs.version }}/decompiled.zip
-          ./mc cp ./GameMainConfig.json target/bluearchive/${{ env.PACKAGE_NAME }}/decompiled/${{ steps.inspect-apk.outputs.version }}/GameMainConfig.json
+          set -euo pipefail
+
+          VERSION="${{ steps.inspect-apk.outputs.version }}"
+          PKG="${{ env.PACKAGE_NAME }}"
+
+          RAW_DIR="raw/bluearchive/${PKG}/${VERSION}"
+          mkdir -p "${RAW_DIR}/apks" "${RAW_DIR}/libraries" "${RAW_DIR}/decompiled"
+
+          # 元信息
+          echo -n "${VERSION}" > "${RAW_DIR}/version.txt"
+          echo -n "${{ steps.decompile-apk.outputs.offset }}" > "${RAW_DIR}/decompiled/offset.txt"
+
+          # DiffableCs 打包
+          zip -r "${RAW_DIR}/decompiled/decompiled.zip" ./DiffableCs/ > /dev/null
+
+          # 复制产物
+          cp -f ./output.xapk "${RAW_DIR}/apks/output.xapk"
+          cp -f ./libil2cpp.so "${RAW_DIR}/libraries/libil2cpp.so"
+          cp -f ./global-metadata.dat "${RAW_DIR}/libraries/global-metadata.dat"
+          cp -f ./GameMainConfig.json "${RAW_DIR}/decompiled/GameMainConfig.json"
+
+          # 额外：给一个 latest 指针（方便你总是取最新）
+          LATEST_DIR="raw/bluearchive/${PKG}/latest"
+          rm -rf "${LATEST_DIR}"
+          mkdir -p "${LATEST_DIR}"
+          echo -n "${VERSION}" > "${LATEST_DIR}/version.txt"
+          cp -f "${RAW_DIR}/apks/output.xapk" "${LATEST_DIR}/output.xapk"
+          cp -f "${RAW_DIR}/libraries/libil2cpp.so" "${LATEST_DIR}/libil2cpp.so"
+          cp -f "${RAW_DIR}/libraries/global-metadata.dat" "${LATEST_DIR}/global-metadata.dat"
+          cp -f "${RAW_DIR}/decompiled/offset.txt" "${LATEST_DIR}/offset.txt"
+          cp -f "${RAW_DIR}/decompiled/decompiled.zip" "${LATEST_DIR}/decompiled.zip"
+          cp -f "${RAW_DIR}/decompiled/GameMainConfig.json" "${LATEST_DIR}/GameMainConfig.json"
+
+      - name: Upload raw as artifact
+        if: steps.inspect-apk.outputs.skip == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-${{ env.PACKAGE_NAME }}-${{ steps.inspect-apk.outputs.version }}
+          path: raw/
+          retention-days: 30
