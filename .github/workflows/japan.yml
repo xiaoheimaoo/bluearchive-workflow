@@ -138,8 +138,9 @@ jobs:
           cp -f "${RAW_DIR}/decompiled/decompiled.zip" "${LATEST_DIR}/decompiled.zip"
           cp -f "${RAW_DIR}/decompiled/GameMainConfig.json" "${LATEST_DIR}/GameMainConfig.json"
           # 复制 JSON
+          cp -f ./ida.py "${RAW_DIR}/decompiled/ida.py"
           cp -f ./script.json "${RAW_DIR}/decompiled/script.json"
-          
+          cp -f ./cpp/appdata/il2cpp-types.h "${RAW_DIR}/decompiled/il2cpp-types.h" || true
           # 打包 DummyDll
           zip -r "${RAW_DIR}/decompiled/DummyDll.zip" ./DummyDll/ > /dev/null
           
