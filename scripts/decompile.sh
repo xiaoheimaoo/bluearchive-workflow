@@ -3,6 +3,7 @@ set -euo pipefail
 
 ./.tools/Il2CppInspector.Redux.CLI -i ./libil2cpp.so -m global-metadata.dat \
   -l tree \
+  -p ida.py \
   -c DiffableCs \
   -o script.json \
   -d DummyDll \
