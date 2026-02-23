@@ -137,6 +137,15 @@ jobs:
           cp -f "${RAW_DIR}/decompiled/offset.txt" "${LATEST_DIR}/offset.txt"
           cp -f "${RAW_DIR}/decompiled/decompiled.zip" "${LATEST_DIR}/decompiled.zip"
           cp -f "${RAW_DIR}/decompiled/GameMainConfig.json" "${LATEST_DIR}/GameMainConfig.json"
+          # 复制 JSON
+          cp -f ./script.json "${RAW_DIR}/decompiled/script.json"
+          
+          # 打包 DummyDll
+          zip -r "${RAW_DIR}/decompiled/DummyDll.zip" ./DummyDll/ > /dev/null
+          
+          # latest 也放一份
+          cp -f "${RAW_DIR}/decompiled/script.json" "${LATEST_DIR}/script.json"
+          cp -f "${RAW_DIR}/decompiled/DummyDll.zip" "${LATEST_DIR}/DummyDll.zip"
 
       - name: Upload raw as artifact
         if: steps.inspect-apk.outputs.skip == 'false'
