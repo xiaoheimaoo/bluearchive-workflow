@@ -26,6 +26,10 @@ on:
         description: "Override the detected version"
         default: ""
 
+# 必须添加此权限，以允许 Action 向仓库推送代码
+permissions:
+  contents: write
+
 env:
   PACKAGE_NAME: ${{ inputs.package_name || 'com.YostarJP.BlueArchive' }}
   APK_URL: ${{ inputs.apk_url || '' }}
@@ -148,10 +152,23 @@ jobs:
           cp -f "${RAW_DIR}/decompiled/script.json" "${LATEST_DIR}/script.json"
           cp -f "${RAW_DIR}/decompiled/DummyDll.zip" "${LATEST_DIR}/DummyDll.zip"
 
-      - name: Upload raw as artifact
+      # 新增：将 raw 目录的变更提交并 push 到仓库
+      - name: Commit and push changes
         if: steps.inspect-apk.outputs.skip == 'false'
-        uses: actions/upload-artifact@v4
-        with:
-          name: raw-${{ env.PACKAGE_NAME }}-${{ steps.inspect-apk.outputs.version }}
-          path: raw/
-          retention-days: 30
+        shell: bash
+        run: |
+          # 配置 git 机器人账号信息
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # 强制拉取最新代码合并，防止多人协作或并发运行时的冲突
+          git pull origin ${{ github.ref }} --rebase
+          
+          # 添加 raw/ 目录下的所有更改
+          git add raw/
+          
+          # 提交更改（如果没有任何更改，使用 || echo ... 防止报错导致 workflow 失败）
+          git commit -m "chore: update Japan version to ${{ steps.inspect-apk.outputs.version }}" || echo "No changes to commit"
+          
+          # 推送到当前分支
+          git push
