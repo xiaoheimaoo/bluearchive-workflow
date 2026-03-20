@@ -1,9 +1,6 @@
 name: Update Japan Version
 
 on:
-  schedule:
-    # Check every 2 hours from 01:00 (10:00 JST) to 14:00 (23:00 JST) everyday
-    - cron: "0 1-14/2 * * *"
   workflow_dispatch:
     inputs:
       force_update:
@@ -25,10 +22,6 @@ on:
         required: false
         description: "Override the detected version"
         default: ""
-
-# 必须添加此权限，以允许 Action 向仓库推送代码
-permissions:
-  contents: write
 
 env:
   PACKAGE_NAME: ${{ inputs.package_name || 'com.YostarJP.BlueArchive' }}
@@ -152,22 +145,10 @@ jobs:
           cp -f "${RAW_DIR}/decompiled/script.json" "${LATEST_DIR}/script.json"
           cp -f "${RAW_DIR}/decompiled/DummyDll.zip" "${LATEST_DIR}/DummyDll.zip"
 
-      - name: Commit and push changes
+      - name: Upload raw as artifact
         if: steps.inspect-apk.outputs.skip == 'false'
-        shell: bash
-        run: |
-          # 配置 git 机器人账号信息
-          git config --local user.name "github-actions[bot]"
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          
-          # 强制拉取最新代码合并，防止多人协作或并发运行时的冲突
-          git pull origin ${{ github.ref }} --rebase
-          
-          # 关键修改：添加 --sparse 参数，允许修改不在 sparse-checkout 列表中的目录
-          git add --sparse raw/
-          
-          # 提交更改（如果没有任何更改，跳过报错）
-          git commit -m "chore: update Japan version to ${{ steps.inspect-apk.outputs.version }}" || echo "No changes to commit"
-          
-          # 推送到当前分支
-          git push
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-${{ env.PACKAGE_NAME }}-${{ steps.inspect-apk.outputs.version }}
+          path: raw/
+          retention-days: 30
