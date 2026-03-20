@@ -152,7 +152,6 @@ jobs:
           cp -f "${RAW_DIR}/decompiled/script.json" "${LATEST_DIR}/script.json"
           cp -f "${RAW_DIR}/decompiled/DummyDll.zip" "${LATEST_DIR}/DummyDll.zip"
 
-      # 新增：将 raw 目录的变更提交并 push 到仓库
       - name: Commit and push changes
         if: steps.inspect-apk.outputs.skip == 'false'
         shell: bash
@@ -164,10 +163,10 @@ jobs:
           # 强制拉取最新代码合并，防止多人协作或并发运行时的冲突
           git pull origin ${{ github.ref }} --rebase
           
-          # 添加 raw/ 目录下的所有更改
-          git add raw/
+          # 关键修改：添加 --sparse 参数，允许修改不在 sparse-checkout 列表中的目录
+          git add --sparse raw/
           
-          # 提交更改（如果没有任何更改，使用 || echo ... 防止报错导致 workflow 失败）
+          # 提交更改（如果没有任何更改，跳过报错）
           git commit -m "chore: update Japan version to ${{ steps.inspect-apk.outputs.version }}" || echo "No changes to commit"
           
           # 推送到当前分支
