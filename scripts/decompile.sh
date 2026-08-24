@@ -1,29 +1,17 @@
 #!/bin/bash
 
-set -euo pipefail
-
 ./.tools/Il2CppInspector -i ./libil2cpp.so \
     -m ./global-metadata.dat \
     -l tree \
-    -p ida.py \
     -c DiffableCs \
-    -o script.json \
-    -d DummyDll \
     --suppress-dll-metadata \
-    --select-outputs
+    --select-outputs cs
 
 echo "Extracting protocolConverter VA offset value..."
-offset=$(rg "^\s+public int TypeConversion\(uint crc, Protocol protocol\);.*// (0x[0-9A-F]+)-" \
-    -o --no-filename -r '$1' \
-    ./DiffableCs/BlueArchive/MX/NetworkProtocol/ProtocolConverter.cs)
-
+offset=$(rg "^\s+public int TypeConversion\(uint crc, Protocol protocol\);.*// (0x[0-9A-F]+)-" -o --no-filename -r '$1' ./DiffableCs/BlueArchive/MX/NetworkProtocol/ProtocolConverter.cs)
 echo "::notice title=VA Offset::$offset"
-echo "offset=$offset" >> "$GITHUB_OUTPUT"
+echo "offset=$offset" >> $GITHUB_OUTPUT
 echo "Offset extracted."
 
 echo "Extracting the public key"
-python ./scripts/extract_key.py \
-    --binary libil2cpp.so \
-    --metadata global-metadata.dat \
-    --find "BEGIN PUBLIC KEY" \
-    --output key.pem
+python ./scripts/extract_key.py --binary libil2cpp.so --metadata global-metadata.dat --find "BEGIN PUBLIC KEY" --output key.pem
