@@ -160,8 +160,6 @@ jobs:
           cp -f ./GameMainConfig.json \
             "${RAW_DIR}/decompiled/GameMainConfig.json"
 
-          cp -f ./key.pem \
-            "${RAW_DIR}/decompiled/key.pem"
 
           # Extra exports kept from xiaoheimaoo fork
           cp -f ./ida.py \
@@ -196,9 +194,6 @@ jobs:
 
           cp -f "${RAW_DIR}/decompiled/GameMainConfig.json" \
             "${LATEST_DIR}/GameMainConfig.json"
-
-          cp -f "${RAW_DIR}/decompiled/key.pem" \
-            "${LATEST_DIR}/key.pem"
 
           cp -f "${RAW_DIR}/decompiled/ida.py" \
             "${LATEST_DIR}/ida.py"
